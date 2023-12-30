@@ -187,16 +187,15 @@ protected:
     // Ajoutez vos attributs et déclarations de méthodes ici
     // P.ex. variables conditions et structure de données pour le buffer
 
+    PcoMutex mutex;
+
     // Queues
     const size_t MAX_TOLERATED_QUEUE_SIZE;
     std::array<std::queue<Request>, 3> buffers;
-    PcoMutex mutex;
 
     // Variables conditions
-
     std::array<Condition, 3> fulls;
     std::array<Condition, 3> empties;
-
 
     bool stopped = false;
 
