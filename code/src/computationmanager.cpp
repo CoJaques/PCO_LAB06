@@ -21,21 +21,62 @@ ComputationManager::ComputationManager(int maxQueueSize): MAX_TOLERATED_QUEUE_SI
 // Relatif à la méthode put(T item) pour ajouter une requête au buffer
 int ComputationManager::requestComputation(Computation c) {
 
-    int id;
-    monitorIn();
-    //récupération de l'id de la requête
-    mutex.lock();
-    id = nextId++;
-    mutex.unlock();
-    if (buffers.at((size_t)c.computationType).size() >= MAX_TOLERATED_QUEUE_SIZE) {
-        // Si le buffer est plein, on attend qu'il y ait de la place
-        wait(fulls.at((size_t)c.computationType));
+    int idA;
+    int idB;
+    int idC;
+
+    switch (c.computationType) {
+        case ComputationType::A:
+            monitorIn();
+            //récupération de l'id de la requête
+            mutex.lock();
+            idA = nextId++;
+            mutex.unlock();
+
+            if (bufferA.size() >= MAX_TOLERATED_QUEUE_SIZE) {
+                // Si le buffer est plein, on attend qu'il y ait de la place
+                wait(fullA);
+            }
+            bufferA.emplace(c, idA);
+            // On signale qu'il y a une requête dans le buffer
+            signal(emptyA);
+            monitorOut();
+            return idA;
+
+        case ComputationType::B:
+            monitorIn();
+            //récupération de l'id de la requête
+            mutex.lock();
+            idB = nextId++;
+            mutex.unlock();
+            if (bufferB.size() >= MAX_TOLERATED_QUEUE_SIZE) {
+                // Si le buffer est plein, on attend qu'il y ait de la place
+                wait(fullB);
+            }
+            bufferB.emplace(c, idB);
+            // On signale qu'il y a une requête dans le buffer
+            signal(emptyB);
+            monitorOut();
+            return idB;
+        case ComputationType::C:
+            monitorIn();
+            //récupération de l'id de la requête
+            mutex.lock();
+            idC = nextId++;
+            mutex.unlock();
+
+            if (bufferC.size() >= MAX_TOLERATED_QUEUE_SIZE) {
+                // Si le buffer est plein, on attend qu'il y ait de la place
+                wait(fullC);
+            }
+            bufferC.emplace(c, idC);
+            // On signale qu'il y a une requête dans le buffer
+            signal(emptyC);
+            monitorOut();
+            return idC;
     }
-    buffers.at((size_t)c.computationType).emplace(c.computationType, id);
-    // On signale qu'il y a une requête dans le buffer
-    signal(empties.at((size_t)c.computationType));
     monitorOut();
-    return id;
+    return -1;
 }
 
 
@@ -58,18 +99,51 @@ Result ComputationManager::getNextResult() {
 
 Request ComputationManager::getWork(ComputationType computationType) {
 
-    monitorIn();
-    if (buffers.at((size_t)computationType).empty()) {
-        // Si le buffer est vide, on attend qu'il y ait une requête
-        wait(empties.at((size_t)computationType));
+    switch (computationType) {
+        case ComputationType::A:{
+            monitorIn();
+            if (bufferA.empty()) {
+                // Si le buffer est vide, on attend qu'il y ait une requête
+                wait(emptyA);
+            }
+            // On récupère la requête
+            Request request = bufferA.front();
+            bufferA.pop();
+            // On signale qu'il y a de la place dans le buffer
+            signal(fullA);
+            monitorOut();
+            return request;
+        }
+        case ComputationType::B:{
+            monitorIn();
+            if (bufferB.empty()) {
+                // Si le buffer est vide, on attend qu'il y ait une requête
+                wait(emptyB);
+            }
+            // On récupère la requête
+            Request request = bufferB.front();
+            bufferB.pop();
+            // On signale qu'il y a de la place dans le buffer
+            signal(fullB);
+            monitorOut();
+            return request;
+        }
+        case ComputationType::C:{
+            monitorIn();
+            if (bufferC.empty()) {
+                // Si le buffer est vide, on attend qu'il y ait une requête
+                wait(emptyC);
+            }
+            // On récupère la requête
+            Request request = bufferC.front();
+            bufferC.pop();
+            // On signale qu'il y a de la place dans le buffer
+            signal(fullC);
+            monitorOut();
+            return request;
+        }
     }
-    // On récupère la requête
-    Request request = buffers.at((size_t)computationType).front();
-    buffers.at((size_t)computationType).pop();
-    // On signale qu'il y a de la place dans le buffer
-    signal(fulls.at((size_t)computationType));
-    monitorOut();
-    return request;
+    return Request(Computation(computationType), -1);
 }
 
 bool ComputationManager::continueWork(int id) {
