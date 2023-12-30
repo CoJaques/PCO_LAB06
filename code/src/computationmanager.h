@@ -187,25 +187,21 @@ protected:
     // Ajoutez vos attributs et déclarations de méthodes ici
     // P.ex. variables conditions et structure de données pour le buffer
 
-    // Queues
-    const size_t MAX_TOLERATED_QUEUE_SIZE;
     PcoMutex mutex;
 
-    // Variables conditions
-
+    // Queues
+    const size_t MAX_TOLERATED_QUEUE_SIZE;
     std::queue<Request> bufferA;
     std::queue<Request> bufferB;
     std::queue<Request> bufferC;
 
+    // Variables conditions
     Condition fullA;
     Condition fullB;
     Condition fullC;
-
     Condition emptyA;
     Condition emptyB;
     Condition emptyC;
-
-
 
     bool stopped = false;
 
