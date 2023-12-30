@@ -21,19 +21,23 @@ ComputationManager::ComputationManager(int maxQueueSize): MAX_TOLERATED_QUEUE_SI
 // Relatif à la méthode put(T item) pour ajouter une requête au buffer
 int ComputationManager::requestComputation(Computation c) {
 
+    size_t indexOfComputationType = (size_t)c.computationType;
     int id;
     monitorIn();
+
     //récupération de l'id de la requête
     mutex.lock();
     id = nextId++;
     mutex.unlock();
-    if (buffers.at((size_t)c.computationType).size() >= MAX_TOLERATED_QUEUE_SIZE) {
+
+    if (buffers.at(indexOfComputationType).size() >= MAX_TOLERATED_QUEUE_SIZE) {
         // Si le buffer est plein, on attend qu'il y ait de la place
         wait(fulls.at((size_t)c.computationType));
     }
-    buffers.at((size_t)c.computationType).emplace(c.computationType, id);
+    buffers.at(indexOfComputationType).emplace(c, id);
+
     // On signale qu'il y a une requête dans le buffer
-    signal(empties.at((size_t)c.computationType));
+    signal(empties.at(indexOfComputationType));
     monitorOut();
     return id;
 }
@@ -58,18 +62,21 @@ Result ComputationManager::getNextResult() {
 
 Request ComputationManager::getWork(ComputationType computationType) {
 
+    size_t indexOfComputationType = (size_t)computationType;
     monitorIn();
-    if (buffers.at((size_t)computationType).empty()) {
+
+    if (buffers.at(indexOfComputationType).empty()) {
         // Si le buffer est vide, on attend qu'il y ait une requête
-        wait(empties.at((size_t)computationType));
+        wait(empties.at(indexOfComputationType));
     }
     // On récupère la requête
-    Request request = buffers.at((size_t)computationType).front();
-    buffers.at((size_t)computationType).pop();
+    Request request = buffers.at(indexOfComputationType).front();
+    buffers.at(indexOfComputationType).pop();
     // On signale qu'il y a de la place dans le buffer
-    signal(fulls.at((size_t)computationType));
+    signal(fulls.at(indexOfComputationType));
     monitorOut();
-    return request;
+
+    return  request;
 }
 
 bool ComputationManager::continueWork(int id) {
