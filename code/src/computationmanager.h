@@ -191,17 +191,11 @@ protected:
 
     // Queues
     const size_t MAX_TOLERATED_QUEUE_SIZE;
-    std::queue<Request> bufferA;
-    std::queue<Request> bufferB;
-    std::queue<Request> bufferC;
+    std::array<std::queue<Request>, 3> buffers;
 
     // Variables conditions
-    Condition fullA;
-    Condition fullB;
-    Condition fullC;
-    Condition emptyA;
-    Condition emptyB;
-    Condition emptyC;
+    std::array<Condition, 3> fulls;
+    std::array<Condition, 3> empties;
 
     bool stopped = false;
 
