@@ -26,9 +26,9 @@ int ComputationManager::requestComputation(Computation c) {
     monitorIn();
 
     //récupération de l'id de la requête
-    mutex.lock();
+    requestMutex.lock();
     id = nextId++;
-    mutex.unlock();
+    requestMutex.unlock();
 
     if (buffers.at(indexOfComputationType).size() >= MAX_TOLERATED_QUEUE_SIZE) {
         // Si le buffer est plein, on attend qu'il y ait de la place
@@ -39,7 +39,7 @@ int ComputationManager::requestComputation(Computation c) {
     // On signale qu'il y a une requête dans le buffer
     signal(empties.at(indexOfComputationType));
     monitorOut();
-    return -1;
+    return id;
 }
 
 
@@ -48,16 +48,20 @@ void ComputationManager::abortComputation(int id) {
 }
 
 Result ComputationManager::getNextResult() {
-    // TODO
-    // Replace all of the code below by your code
+   monitorIn();
+   if(results.empty()){
+       // Si le buffer est vide, on attend qu'il y ait un résultat
+       wait(resultAvailable);
+   }
 
-    // Filled with some code in order to make the thread in the UI wait
-    monitorIn();
-    auto c = Condition();
-    wait(c);
+   //TODO recuperer le resultat dans l'ordre
+
+
+    // On récupère le résultat - TODO A remplacer par le code qui récupère le résultat dans l'ordre
+    Result result = results.front();
+    results.pop_front();
     monitorOut();
-
-    return Result(-1, 0.0);
+    return result;
 }
 
 Request ComputationManager::getWork(ComputationType computationType) {
@@ -85,7 +89,15 @@ bool ComputationManager::continueWork(int id) {
 }
 
 void ComputationManager::provideResult(Result result) {
-    // TODO
+    monitorIn();
+
+    //TODO faire un splice pour mettre le resultat directement au bon index
+    results.push_back(result);
+    results.sort([](const Result &f, const Result &s) { return f.getId() < s.getId(); });
+
+    // On signale qu'il y a un resultat dans le buffer
+    signal(resultAvailable);
+    monitorOut();
 }
 
 void ComputationManager::stop() {
