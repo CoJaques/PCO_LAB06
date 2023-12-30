@@ -189,13 +189,22 @@ protected:
 
     // Queues
     const size_t MAX_TOLERATED_QUEUE_SIZE;
-    std::array<std::queue<Request>, 3> buffers;
     PcoMutex mutex;
 
     // Variables conditions
 
-    std::array<Condition, 3> fulls;
-    std::array<Condition, 3> empties;
+    std::queue<Request> bufferA;
+    std::queue<Request> bufferB;
+    std::queue<Request> bufferC;
+
+    Condition fullA;
+    Condition fullB;
+    Condition fullC;
+
+    Condition emptyA;
+    Condition emptyB;
+    Condition emptyC;
+
 
 
     bool stopped = false;
