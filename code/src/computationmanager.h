@@ -19,6 +19,8 @@
 #include <memory>
 
 #include "pcosynchro/pcohoaremonitor.h"
+#include "pcosynchro/pcomutex.h"
+#include <array>
 
 /**
  * @brief The ComputationType enum represents the abstract computation types that are available
@@ -187,6 +189,14 @@ protected:
 
     // Queues
     const size_t MAX_TOLERATED_QUEUE_SIZE;
+    std::array<std::queue<Request>, 3> buffers;
+    PcoMutex mutex;
+
+    // Variables conditions
+
+    std::array<Condition, 3> fulls;
+    std::array<Condition, 3> empties;
+
 
     bool stopped = false;
 
@@ -197,6 +207,7 @@ private:
     inline void throwStopException() {throw StopException();}
 
     int nextId = 0;
+
 };
 
 #endif // COMPUTATIONMANAGER_H
